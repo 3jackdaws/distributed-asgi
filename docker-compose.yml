@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  interface:
+    container_name: interface-distributed_asgi
+    build: .
+    ports:
+      - 5000:80
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=TRUE
+
+  redis:
+    image: redis:alpine
