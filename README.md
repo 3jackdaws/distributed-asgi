@@ -3,26 +3,25 @@ Uses Redis to distribute ASGI messages between worker ASGI apps.  Workers can be
 
 
 # Usage
-Set custom redis options and key prefixes by subclassing `ASGIRedisProducer`.
-
 
 ```py
 # server.py
-from distributed_asgi import ASGIRedisProducer
+from distributed_asgi import create_distributor
 
-class App(ASGIRedisProducer):
-    key_prefix = "MYPREFIX"
-    redis_options = {
-        "address": "redis://mywebsite.com",
-        "password": "abc123"
-    }
+app = create_distributor(
+    host="mywebsite.com",
+    port=6379,
+    db=0,
+    password="abc123",
+    key_prefix="MYPREFIX"
+)
 
 ```
 
 
 ```py
 # worker.py
-from distributed_asgi import ASGIRedisConsumer
+from distributed_asgi import Node
 
 
 class ASGIApp:
@@ -41,7 +40,7 @@ class ASGIApp:
         })
 
 
-app = ASGIRedisConsumer(
+node = Node(
     host="mywebsite.com",
     port="6379",
     password="abc123",
@@ -50,7 +49,7 @@ app = ASGIRedisConsumer(
 )
 
 print(f"Starting worker")
-app.run()
+node.run()
 ```
 
 Once you have `worker.py` and `server.py`, use some interface server to run `server.py`.
@@ -65,9 +64,9 @@ and run `worker.py` as a normal python script:
 $ python worker.py
 ```
 
-ASGI requests received by the ASGIRedisProducer will be enqueued and later dequeued by the ASGIRedisConsumer worker.  It should be possible to replace `ASGIApp` in `worker.py` with your favorite ASGI application framework.  Maybe Quart for example?
+ASGI requests received by the Distributor will be enqueued and later dequeued by the Node class and passed to the provided asgi app worker.  It should be possible to replace `ASGIApp` in `worker.py` with your favorite ASGI application framework.  Maybe Quart for example?
 
 
 
 # Future Plans
-* Path-based HTTP router that puts requests into different queues based on path.  Would allow for
+* Path-based HTTP router that puts requests into different queues based on path.

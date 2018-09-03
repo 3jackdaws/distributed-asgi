@@ -1,14 +1,14 @@
-FROM            python:3.7
+FROM                python:3.7
+MAINTAINER          Ian Murphy <3jackdaws@gmail.com>
 
-RUN             mkdir /app
-WORKDIR         /app
+RUN                 mkdir /app
+WORKDIR             /app
 
-ADD             . .
+ADD                 . .
 
-RUN             pip install -r requirements.txt
+RUN                 pip install -r requirements.txt
 
-ENTRYPOINT      bash -c "bash docker-entrypoint.sh"
-
-
+EXPOSE              80
 
 
+ENTRYPOINT          bash -c "bash docker-entrypoint.sh"

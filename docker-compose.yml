@@ -1,15 +1,16 @@
 version: '3'
 
 services:
-  interface:
-    container_name: interface-distributed_asgi
+  distributor:
     build: .
     ports:
-      - 5000:80
+      - 8000:80
     volumes:
       - .:/app
     environment:
       - PYTHONUNBUFFERED=TRUE
+      - KEY_PREFIX=ISO
+      - REDIS_HOST=redis
 
   redis:
     image: redis:alpine
