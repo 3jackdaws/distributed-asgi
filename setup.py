@@ -7,7 +7,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Ian Murphy",
     author_email="3jackdaws@gmail.com",
-    version='0.0.3dev',
+    version='0.0.4',
     packages=['distributed_asgi',],
     license='MIT',
     install_requires=[
