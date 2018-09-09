@@ -1,37 +1,23 @@
-from uuid import uuid4
-from time import time
-import os
-
-def get_random_id():
-    length = 36
-    lower = 33
-    upper = 126
-    diff = upper - lower
-    id = bytearray(os.urandom(length))
-    for i, c in enumerate(id):
-        id[i] = (c % diff) + lower
-    return id
-
-def get_random_id2():
-    return str(uuid4()).replace("-", "")
+import re
 
 
-ITERATIONS = 100000
+p = re.compile(".*")
+p.ma
 
-TEST_FUNCTIONS = [
-    get_random_id,
-    get_random_id2
-]
+def _get_key(path, routes:{}):
+    for pattern, key_template in routes.items():
+        match = pattern.match(path)
+        if match:
+            return match.expand(key_template)
+    return None
 
-print(len(str(uuid4())))
+if __name__ == "__main__":
+    PATH = "/api/soundcloud/478324982"
 
-for generation_function in TEST_FUNCTIONS:
-    total = 0
-    for _ in range(ITERATIONS):
-        start = time()
-        id = generation_function()
-        duration = time() - start
-        total += duration
-    avg = total/ITERATIONS
+    ROUTES = {
+        "/api/([a-zA-Z0-9-_]+)/([0-9]+)+": r"API-\1-\2",
+        ".*": "ERROR"
+    }
 
-    print(f"AVG: {avg} s")
+    key = _get_key(PATH, ROUTES)
+    print(key)

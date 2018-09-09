@@ -18,16 +18,16 @@ def create_send(channel_name, redis):
 
 
 class Node:
-    def __init__(self, host='localhost', port='6379', key_prefix=ASGI_EVENTS_KEY_PREFIX, cls=None, db=None, password=None):
+    def __init__(self, host='localhost', port='6379', key=ASGI_EVENTS_KEY_PREFIX, cls=None, db=None, password=None):
         self.redis_options = {
             "address" : f"redis://{host}:{port}",
             "db"      : db,
             "password": password
         }
         self.cls        = cls
-        self.key_prefix = key_prefix
+        self.key = key
 
-    async def _run(self):
+    async def listen_for_events(self):
         self.redis      = await aioredis.create_redis(**self.redis_options)
         app             = self.cls
         while True:
@@ -46,7 +46,7 @@ class Node:
 
         # Blocking call that runs workers
     def run(self):
-        asyncio.get_event_loop().run_until_complete(self._run())
+        asyncio.get_event_loop().run_until_complete(self.listen_for_events())
 
     async def terminate_asgi(self, send_channel):
         await self.redis.rpush(send_channel, marshal.dumps({"type": "app.terminate"}))
@@ -58,7 +58,7 @@ class Node:
         (
             channel_name,
             raw_message
-        ) = await self.redis.blpop(f"{self.key_prefix}-EVENTS")
+        ) = await self.redis.blpop(str(self.key))
         return marshal.loads(raw_message)
 
 

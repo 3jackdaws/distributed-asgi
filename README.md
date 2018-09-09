@@ -1,22 +1,42 @@
 # Distributed ASGI
-Uses Redis to distribute ASGI messages between worker ASGI apps.  Workers can be on different machines, they just must be able to connect to the central Redis server.
+Uses Redis to distribute ASGI messages between worker ASGI apps based on routes.  Workers can be on different machines, they just must be able to connect to the central Redis server.
 
 
 # Usage
 
-```py
-# server.py
-from distributed_asgi import create_distributor
+Routes are made of two parts: a regular expression that matches a path, and a key template string that is used to form the key that ASGI events are pushed to.
 
-app = create_distributor(
-    host="mywebsite.com",
+Key templates can also use numbered regex backslash replacements.  For example, the route `{"/api/([a-z-]+)":r"API-\1"}` will match and produce the following keys:
+
+```
+PATH                KEY
+/api/test           API-test
+/api/test/38        API-test
+/api/banana         API-banana
+/test/api/test2     API-test2
+```
+
+Here's an example:
+
+```py
+# distributor.py
+from distributed_asgi import create_path_distributor
+
+app = create_path_distributor(
+    host="mywebsite.com",       # point to redis server
     port=6379,
     db=0,
     password="abc123",
-    key_prefix="MYPREFIX"
+    routes={
+        "/api/([a-z-]+)": r"ASGI-\1",
+        "/worker/([0-9]+)": r"worker-queue-\1",
+        "/": "ALL-WEBSITE-TRAFFIC"
+    }
 )
 
 ```
+
+To actually make use of this, we need to make a worker that listens on one or more of the keys
 
 
 ```py
@@ -45,14 +65,14 @@ node = Node(
     port="6379",
     password="abc123",
     cls=ASGIApp,
-    key_prefix='MYPREFIX'
+    key='ASGI-testing'
 )
 
 print(f"Starting worker")
 node.run()
 ```
 
-Once you have `worker.py` and `server.py`, use some interface server to run `server.py`.
+Once you have `worker.py` and `server.py`, use some interface server to run `distributor.py`.
 
 ```
 $ uvicorn server:App
@@ -64,9 +84,7 @@ and run `worker.py` as a normal python script:
 $ python worker.py
 ```
 
-ASGI requests received by the Distributor will be enqueued and later dequeued by the Node class and passed to the provided asgi app worker.  It should be possible to replace `ASGIApp` in `worker.py` with your favorite ASGI application framework.  Maybe Quart for example?
+The worker will only respond to http requests with a path that contains `/api/testing` because that is the only key we told it to listen to.
 
-
-
-# Future Plans
-* Path-based HTTP router that puts requests into different queues based on path.
+# What happens if there are no workers?
+If there is no Node instance listening on a key that the Distributor pushes events to, the Distributor will timeout after 5 seconds, close the connection, and return a 405 error.  Workers do not need to respond within 5 seconds, the Node class will automatically let the Distributor know there is a worker at least listening.
